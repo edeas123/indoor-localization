@@ -74,6 +74,28 @@ def calculateDistance(freqInMHz, level):
     exp = (27.55 - (20 * math.log10(freqInMHz)) + abs(level)) / 20.0 
     return math.pow(10.0, exp)
 
+#get intersection points between two non intersecting circles and the line that connects their centers
+def line_intersect(x1,y1,r1,x2,y2,r2):
+    """
+    x1,y1,r1: The x,y coordinates and the radius of the first circle
+    x2,y2,r2: The x,y coordinates and the radius of the second circle
+
+    return the intersection points with the circle and lines
+    """
+    #between each circle, draw a line to the center of each
+    #get the point where the line and circles intersect
+    #return all of the possible points
+    dx,dy = x2-x1,y2-y1
+    d = math.sqrt(dx*dx+dy*dy) #distance between circle centers
+    phi = math.atan2(y2-y1, x2-x1) #get the angle of the slope of the line between the two points from circle of interest to the other
+    a = x1 + r1 * math.cos(phi)  #calculate new x
+    b = y1 + r1 * math.sin(phi) #calculate new y
+    phi = math.atan2(y1-y2, x1-x2) #get the angle of the slope of the line between the two points from the second circle this time
+    c = x2 + r2 * math.cos(phi) #calculate new x
+    d = y2 + r2 * math.sin(phi) #calculate new y
+    
+    return (a,b), (c,d) #return the two points of intersection
+
 #I added num_routers as a parameter, just in case you would like to test this on more than three routers
 #note this is only for one duty cycle
 def circle_intersection(num_routers, x, y, freq, strength):
@@ -88,8 +110,14 @@ def circle_intersection(num_routers, x, y, freq, strength):
     """
     geom = Geometry()
     result=[]
-    for i in range(0, num_routers-1):
-        for j in range(i+1,num_routers):
-            result.extend(geom.circle_intersection((x[i],y[i],calculateDistance(freq[i],strength[i])), (x[j],y[j],calculateDistance(freq[j],strength[j]))))
+    if num_routers == 1: #if there is only one router
+        return [(x,y)]   #return the position of the router
+    else:
+        for i in range(0, num_routers-1):
+            for j in range(i+1,num_routers):
+                points = geom.circle_intersection((x[i],y[i],calculateDistance(freq[i],strength[i])), (x[j],y[j],calculateDistance(freq[j],strength[j])))
+                if len(points) == 0: #if no intersections are found
+                    result.extend(line_intersect(x[i],y[i],calculateDistance(freq[i],strength[i]), x[j],y[j],calculateDistance(freq[j],strength[j])))
+                else:
+                    result.extend(points)
     return result
-   
