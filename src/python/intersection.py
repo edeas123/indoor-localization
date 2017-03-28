@@ -111,7 +111,8 @@ def circle_intersection(num_routers, x, y, freq, strength):
     geom = Geometry()
     result=[]
     if num_routers == 1: #if there is only one router
-        return [(x,y)]   #return the position of the router
+        return [(x[0], y[0])]
+#        return [(x,y)]   #return the position of the router
     else:
         for i in range(0, num_routers-1):
             for j in range(i+1,num_routers):

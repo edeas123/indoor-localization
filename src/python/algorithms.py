@@ -32,7 +32,7 @@ class location:
 #                print "fail", f
                 pass
         return rdf
-        
+    
     def locate(self, df):
      
         # the dataframe represent a duty cycle,
@@ -54,9 +54,16 @@ class location:
         if (router_count == 1):
 #            print "entered here"
 #            print df['base_bssid']
-            router_mac = df['base_bssid']
+            router_mac = df['base_bssid']#.values[0]
+#            print "router_mac", router_mac
             try:
-                coord = self.apdata.loc[router_mac]
+                pt = self.apdata.loc[router_mac].values[0]
+                columns = self.apdata.columns.values
+#                print columns
+#                print pt
+                coord = pd.DataFrame(data=[pt], columns=columns)
+#                print coord
+                coord['source'] = "Router"
                 # additional algorithm using markov rule etc
                 # to narrow it down based on previous location
                 # particle filtering
@@ -65,9 +72,12 @@ class location:
             except:
                 # we don't have the router in our database
 #                print "Nonex1", None
-                columns = self.apdata.columns
-#                return None
-                return pd.DataFrame(data=[[None] * len(columns)],index=None,columns=columns)
+                columns = self.apdata.columns.values
+                coord = pd.DataFrame(data=[[None] * len(columns)],index=None,columns=columns)
+                coord['source'] = "Unknown Router"
+                
+                return coord
+            
 
         
         # if there are multiple routers
@@ -75,7 +85,7 @@ class location:
         # TODO: we need to plot a distribution of the signal levels too
         # ... since we are filtering with it
         
-        #df = df.loc[(df()['level'] > -80) & (df()['level'] < -30)]
+        #df = df.loc[(df['level'] > -80) & (df['level'] < -30)]
         
         # get the data for the ssid with the strongest signal
         df_strongest = pd.groupby(df, ['base_bssid']).apply(self.strongest)
@@ -91,8 +101,11 @@ class location:
         if (router_count == 0):
 #            print router_count, "None2"
 #            return None
-            columns = self.apdata.columns
-            return pd.DataFrame(data=[[None] * len(columns)],index=None,columns=columns)
+            columns = self.apdata.columns.values
+            coord = pd.DataFrame(data=[[None] * len(columns)],index=None,columns=columns)
+            coord['source'] = "Unknown Router"            
+            return coord
+        
         
         # perform the circle intersection - using the ssid data for the strongest signal
         points = it.circle_intersection(router_count, df_mac['easting'], df_mac['northing'], 
@@ -102,13 +115,16 @@ class location:
         # return the original router locationS  
 #        print "points", points
         if (len(points) == 0):
+            df_mac['source'] = "Zero Intersection"
             return df_mac
         
-        coord = pd.DataFrame()
+        coord = pd.DataFrame(columns=['easting', 'northing'])
         for point in points:
-#            print point
-            coord['easting'] = [point[0]]
-            coord['northing'] = [point[1]]
-        
+            pt = pd.DataFrame(data=[[point[0], point[1]]], columns=['easting', 'northing'])
+#            print pt
+#            pt['easting'] = [point[0]]
+#            pt['northing'] = [point[1]]
+            pt['source'] = "Intersection"            
+            coord = coord.append(pt)
         
         return coord    

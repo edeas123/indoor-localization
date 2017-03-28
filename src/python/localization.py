@@ -28,8 +28,15 @@ cfg_file = file(config_path + os.sep + 'config.txt')
 data_query = open(sql_path + os.sep + 'data_query.sql', 'r')
 study = utils.run_sql(data_query, cfg_file)
 
-data = pd.DataFrame(study, columns=['user_id', 'record_time', 'ssid', 'bssid', 
+data = pd.DataFrame(study, columns=['user_id', 'record_time', 'ssid', 'bssid',
                                      'base_bssid', 'level', 'freq'])
+# filter study wifi data by signal strength
+# NOTE: we lose about 51% of records
+data = data.loc[(data['level'] > -85) & (data['level'] < -30)]
+
+# filter study wifi data by accelerometer variance over three duty cycle
+
+# [optional] filter using the gps signal
 
 # query to retrieve study access points database
 cfg_file = file(config_path + os.sep + 'config.txt')
@@ -46,10 +53,11 @@ algo = location(apdata)
 # determine localization information for each duty cycle
 duty_cycles = pd.groupby(data, ['user_id', 'record_time'])
 
-# using the strongest signal strength at that duty cycle
 # using trilateration algorithm at that duty cycle
 result = duty_cycles.apply(algo.locate)
 
-result = result.reset_index(['mac'], drop=True)
+#result = result.reset_index(['mac'], drop=True)
+
+# 2d plot of the location for a sample individual
 
 
