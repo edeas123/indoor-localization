@@ -54,10 +54,16 @@ algo = location(apdata)
 duty_cycles = pd.groupby(data, ['user_id', 'record_time'])
 
 # using trilateration algorithm at that duty cycle
-result = duty_cycles.apply(algo.locate)
+#result = duty_cycles.apply(algo.locate)
+#result = result.reset_index()[['easting', 'northing', 'source']].dropna()
 
+#print result
 #result = result.reset_index(['mac'], drop=True)
 
 # 2d plot of the location for a sample individual
 
 
+# using particle filtering algorithm
+result_particles = duty_cycles.apply(algo.locate_particles)
+
+print result_particles
