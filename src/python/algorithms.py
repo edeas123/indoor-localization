@@ -7,6 +7,8 @@ Created on Thu Mar 09 14:36:37 2017
 import numpy as np
 import pandas as pd
 import intersection as it
+import particle_filter as pf
+import centerline as ct
 
 class location:
     
@@ -29,10 +31,45 @@ class location:
 #                print coord
                 rdf = rdf.append(coord, ignore_index=True)            
             except:
-#                print "fail", f
+#                print "fail"
                 pass
         return rdf
     
+    def locate_particles(self, df):
+        
+        # retreive info of floor and building from ap database
+        df_full = self.loc(df)
+        
+        # retrieve centerline database points for floor and building
+        
+        if len(df_full) == 0:
+            columns = self.apdata.columns.values
+            coord = pd.DataFrame(data=[[None] * len(columns)],index=None,columns=columns)
+            coord['source'] = "Unknown Router"
+            
+            return coord
+        
+        floor_counts = df_full['floor'].value_counts()
+        floor = floor_counts.idxmax()
+
+        building_counts = df_full['building'].value_counts()
+        building = building_counts.idxmax()
+        
+        if (building == "MurrayLibrary"):
+            building = "Murray"
+    
+        centerline_x_y = ct.get_points(floor, building)
+#        print floor, building, centerline_x_y
+#        
+        # get the data for the ssid with the strongest signal
+#        router_count = len(np.unique(df_full['mac']))        
+        observations = pd.groupby(df_full, ['mac']).apply(self.strongest)
+
+        # call particle filtering algorithm
+        points = pf.particle_filter(centerline_x_y,  observations)
+        print points
+        return points
+
     def locate(self, df):
      
         # the dataframe represent a duty cycle,
@@ -84,8 +121,6 @@ class location:
         # filter to the strongest signal strengths (-30, -80)
         # TODO: we need to plot a distribution of the signal levels too
         # ... since we are filtering with it
-        
-        #df = df.loc[(df['level'] > -80) & (df['level'] < -30)]
         
         # get the data for the ssid with the strongest signal
         df_strongest = pd.groupby(df, ['base_bssid']).apply(self.strongest)
