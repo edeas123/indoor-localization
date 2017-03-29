@@ -3,15 +3,15 @@ import scipy.stats
 import scipy.spatial
 import numpy as np
 import math
-import intersection.py
+from intersection import *
 
 #kd trees are very useful for range and nearest neighbor searches
 #used to determine the distance between a point and the nearest (x,y) in the centerline database
 def search_kdtree(t,point):
-	"""
-	t: the kd tree to search through
-	point: the location of particle to find closest distance to node in centerline
-	"""
+    """
+    	t: the kd tree to search through
+    	point: the location of particle to find closest distance to node in centerline
+    """
     dist, indexes = t.query(point)
     return dist
 
