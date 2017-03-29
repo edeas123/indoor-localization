@@ -3,7 +3,7 @@ import scipy.spatial
 import pandas
 import numpy as np
 import math
-import intersection.py
+import intersection
 
 #kd trees are very useful for range and nearest neighbor searches
 #used to determine the distance between a point and the nearest (x,y) in the centerline database
@@ -75,27 +75,44 @@ def measurement_prob(x, y, routers):
 	return prob
 
 
-
-def particle_filter(centerline_x_y, observations, N=1000):
+def initialize(obs, N=500, r=3):
 	"""
-	centerline_x_y: 2d numpy array of x and y coordinates for nodes of the centerline
+	Based on the observations of the first duty cycle (dataframe of mac id, x/y coordinates, frequency, level whatever else you need)
+	Get the x/y location of the strongest signal
+	Calculate the distance from this x/y coordinate and multiply by some integer r
+	Generate a particle within the radius as initial hypotheses
+
+	"""
+	#get the maximum level x/y coordinate in the observation data frame
+	l = obs.loc[obs['level'].idxmax()].level
+	f = obs.loc[obs['level'].idxmax()].freq
+	#calculate distance away from the router and multiply by r
+	dist = calculateDistance(f,l) * r 
+	#generate a random particle uniformly distributed between x-dist, x+dist, same for y
+	xmin, xmax = obs.loc[obs['level'].idxmax()].easting - dist, obs.loc[obs['level'].idxmax()].easting + dist
+	ymin, ymax = obs.loc[obs['level'].idxmax()].northing - dist, obs.loc[obs['level'].idxmax()].northing + dist
+	x = np.random.uniform(xmin, xmax, N)
+    y = np.random.uniform(ymin, ymax, N)
+
+    return x, y
+
+	
+
+def particle_filter(centerline_x_y, observations):
+	"""
+	centerline_x_y: 2d numpy array of x and y coordinates for nodes of the centerline 
 	ie. array([[0, 3],
        		   [1, 5],
        		   [2, 1],
        		   [3, 2]])
-	observations: dataframe of router location and strength/freq observed (x,y, signal_strength, frequency, timestamp)
+	observations: dataframe of router location and strength/freq observed (easting,northing, level, freq, time_stamp - or record_time, not sure what we are using)
 	N: The number of particles to estimate position
+
+	1. I will add bootstrap resampling based on distances to centerline
+	2. I will make another method to detect when the floor/building changes to determine if particle filter needs to be reset
 	"""
-	#get an estimation of building boundaries
-	xmin, xmax = np.amin(centerline_x_y[:,0]), np.amax(centerline_x_y[:,0])
-	ymin, ymax = np.amin(centerline_x_y[:,1]), np.amax(centerline_x_y[:,1])
-	#turn centerline database into a kdtree to easily get nearest neighbour to point
-	mytree = scipy.spatial.cKDTree(centerline_x_y)
-	#initialize N particles
-	#draw from uniform distribution within the building walls using centerline
-	x = np.random.uniform(xmin-3, xmax+3, N)
-	y = np.random.uniform(ymin-3, ymax+3, N)
-	w = [x / sum([1.]*N) for x in [1.]*N] #weights of the particles, which are equally likely at this point
+	x,y=initialize(observations)
+	w = [x / sum([1.]*len(x)) for x in [1.]*len(x)] #weights of the particles, which are equally likely at this point
 	for obs in observations.time_stamp.unique(): #while there are observations (routers) seen
 		#for each particle
 		for i in range(N):
@@ -105,12 +122,13 @@ def particle_filter(centerline_x_y, observations, N=1000):
 			x[i], y[i] = random_walk(x[i],y[i],w[i])
 			#reweight the particles based on the new position
 			#if the distance to closest point on centerline is greater than 3m, than the point is not useful
-			if search_kdtree(mytree, (x[i],y[i])) > 3:
-				w[i] = 0
-			else:
-				#weight based on the distance
-				#what is the probability of observing a signal d1 m away from the distance particle is from the router  
-				w[i] = measurement_prob(x[i], y[i], df)
+			#ignore this, every particle gets a weight now, I will add the snapping to this method tonight
+			#if search_kdtree(mytree, (x[i],y[i])) > 3:
+				#w[i] = 0
+			#else:
+			#weight based on the distance
+			#what is the probability of observing a signal d1 m away from the distance particle is from the router  
+			w[i] = measurement_prob(x[i], y[i], df)
 		# Normalise weights
 		w <- [x / sum(w) for x in w]
 		Neff = 1/sum([x^2 for x in w]) # 1 / crossproduct of w to calculate the number of effective particles
@@ -120,6 +138,8 @@ def particle_filter(centerline_x_y, observations, N=1000):
 			y = [y[j] for j in resample(w)] 
 	
 	return zip(x,y)
+
+
 
 
 
