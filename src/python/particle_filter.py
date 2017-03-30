@@ -74,6 +74,39 @@ def measurement_prob(x, y, routers):
 
 	return prob
 
+def bootstrap_resample(centerline, particles, n):
+	"""
+	centerline: kd tree of the centerline
+	bootstrap sampling, resample everytime
+	given weights for the nodes along centerline, resample these nodes (ie. resample in the most likely places (nodes))
+	then do a random walk ("fuzz out") so the particles will disperse off of the centerline again (in case individuals are in a room and potentially further away from centerline than 3m)
+	require the nodes of centerline for a floor currently on (as a kd tree)
+	require the current locations of all particles
+	get the closest node on centerline to the particle and increase that node's weight
+	resample particles at these nodes
+	"""
+	#for each particle, get the closest node on centerline and the index
+	for p in particles:
+		dist, index = search_kdtree(centerline, p)
+
+	# get a frequency table of the list of indices
+	counts = Counter(index)
+
+	#normalize the weights
+	fact=1.0/sum(counts.itervalues())
+	for i in counts:
+			counts[i] = counts[i]*fact
+
+	w = counts.values()
+	#resample points on centerline using these new weights
+	k = counts.keys()
+	p_new = np.random.choice(k,n,replace=T,p=w) #now we have n selected indices based on weight (w) in the kd tree, now we find the points 
+	#return new x and y points using the resample indices
+	x_r = centerline.data[p_new, 0]
+	y_r = centerline.data[p_new, 1]
+
+	#return list x_r and y_r
+	return x_r, y_r
 
 def initialize(obs, N=500, r=3):
 	"""
