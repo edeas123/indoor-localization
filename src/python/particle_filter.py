@@ -42,55 +42,95 @@ def random_walk(x,y,volatility):
 	y += dy
 	return x, y
 
+def gaussian(mu, sigma, x):
+	"""
+	calculates the probability of x for 1-dim Gaussian with mean mu and var. sigma
+	mu: particle distance to the router
+	sigma: standard deviation
+	x: distance to the router measured by the phone
+	return gaussian probability
+	"""
+	# calculates the probability of x for 1-dim Gaussian with mean mu and var. sigma
+	return math.exp(- ((mu - x) ** 2) / (sigma ** 2) / 2.0) / math.sqrt(2.0 * math.pi * (sigma ** 2))
 
-def particle_filter(centerline_x_y, observations, N=1000):
+def measurement_prob(x, y, routers):
 	"""
-	centerline_x_y: 2d numpy array of x and y coordinates for nodes of the centerline
+	Calculate the measurement probability: how likely a measurement should be
+	x,y: current particle coordinates
+	routers: df of routers for one time step
+	return probability
+	"""
+	prob = 1.0
+	for i in range(routers.shape[0]):
+		#calculate distance from particle to the router (x,y)
+		dist = calculateDistance(routers.iloc[i]['freq'], routers.iloc[i]['level'])
+		#calculate distance participant is predicted to be from the router (x,y)
+		#calculate the difference between these two distances
+		dx,dy = x-routers.iloc[i]['easting'],y-routers.iloc[i]['northing']
+		measure = math.sqrt(dx*dx+dy*dy) 
+		prob *= gaussian(dist, 3, measure)
+	return prob
+
+
+def initialize(obs, N=500, r=3):
+	"""
+	Based on the observations of the first duty cycle (dataframe of mac id, x/y coordinates, frequency, level whatever else you need)
+	Get the x/y location of the strongest signal
+	Calculate the distance from this x/y coordinate and multiply by some integer r
+	Generate a particle within the radius as initial hypotheses
+	"""
+	#get the maximum level x/y coordinate in the observation data frame
+	l = obs.loc[obs['level'].idxmax()].level
+	f = obs.loc[obs['level'].idxmax()].freq
+	#calculate distance away from the router and multiply by r
+	dist = calculateDistance(f,l) * r 
+	#generate a random particle uniformly distributed between x-dist, x+dist, same for y
+	xmin, xmax = obs.loc[obs['level'].idxmax()].easting - dist, obs.loc[obs['level'].idxmax()].easting + dist
+	ymin, ymax = obs.loc[obs['level'].idxmax()].northing - dist, obs.loc[obs['level'].idxmax()].northing + dist
+	x = np.random.uniform(xmin, xmax, N)
+	y = np.random.uniform(ymin, ymax, N)
+	return x, y
+
+def particle_filter(centerline_x_y, observations, N=500, Nmin=250):
+	"""
+	Most simple version of particle filter, no limitations based on centerline
+	centerline_x_y: 2d numpy array of x and y coordinates for nodes of the centerline 
 	ie. array([[0, 3],
-       		   [1, 5],
-       		   [2, 1],
-       		   [3, 2]])
-	observations: dataframe of router location and strength/freq observed (x,y, signal_strength, frequency)
-	N: The number of particles to estimate position
+	       		  [1, 5],
+	       		  [2, 1],
+	       		  [3, 2]])
+	observations: dataframe of router location and strength/freq observed (easting,northing, level, freq, record_time)
 	"""
-	#get an estimation of building boundaries
-	xmin, xmax = np.amin(centerline_x_y[:,0]), np.amax(centerline_x_y[:,0])
-	ymin, ymax = np.amin(centerline_x_y[:,1]), np.amax(centerline_x_y[:,1])
-	#turn centerline database into a kdtree to easily get nearest neighbour to point
-	mytree = scipy.spatial.cKDTree(centerline_x_y)
-	#initialize N particles
-	#draw from uniform distribution within the building walls using centerline
-	x = np.random.uniform(xmin-3, xmax+3, N)
-	y = np.random.uniform(ymin-3, ymax+3, N)
-	w = [1]*N #weights of the particles, which are equally likely at this point
-	for obs in range(0,observations.shape[0]): #while there are observations (routers) seen
+	x,y=initialize(observations)
+	w = [j / sum([1.]*len(x)) for j in [1.]*len(x)] #weights of the particles, which are equally likely at this point
+	for obs in observations.record_time.unique(): #while there are observations (routers) seen
 		#for each particle
 		for i in range(N):
+			#df where time stamp is the same as obs
+			df = observations.loc[observations['record_time'] == obs]
 			#run particle through the model
-			x[i], y[i] = random_walk(x[i],y[i],observations.iloc[obs][['level']])
+			x[i], y[i] = random_walk(x[i],y[i],w[i])
 			#reweight the particles based on the new position
 			#if the distance to closest point on centerline is greater than 3m, than the point is not useful
-			if search_kdtree(mytree, (x[i],y[i])) > 3:
-				w[i] = 0
-			else:
-				#calculate distance from particle to the router (x,y)
-				d1 = calculateDistance(observations.iloc[obs][['freq']],observations.iloc[obs][['level']])
-				#calculate distance participant is predicted to be from the router (x,y)
-				#calculate the difference between these two distances
-				dx,dy = x[i]-observations.iloc[obs][['easting']],y[i]-observations.iloc[obs][['northing']]
-				dist = math.sqrt(dx*dx+dy*dy) 
-				diff = abs(math.sqrt(dx*dx+dy*dy) - d1)
-				#weight based on the distance
-				#what is the probability of observing a signal d1 m away from the distance particle is from the router  
-				w[i] = scipy.stats.norm(d1, diff).pdf(dist)
-		# Normalise weights
-		w <- [x / sum(w) for x in w]
-		Neff = 1/sum([x^2 for x in w]) # 1 / crossproduct of w to calculate the number of effective particles
-		if Neff < Nmin:
-			#np.random.choice(x,n,replace=T,p=w)
-			x = [x[j] for j in resample(w)] 
-			y = [y[j] for j in resample(w)] 
-	
+			#ignore this, every particle gets a weight now, I will add the snapping to this method 
+			#if search_kdtree(mytree, (x[i],y[i])) > 3:
+				#w[i] = 0
+			#else:
+			#weight based on the distance
+			#what is the probability of observing a signal d1 m away from the distance particle is from the router  
+			w[i] = measurement_prob(x[i], y[i], df)
+			# Normalise weights
+		s = sum(w)
+		crossprod= sum([x**2 for x in w])
+		if crossprod != 0 and s !=0: #make sure no division by 0 if weights are too small
+			w = [x / s for x in w]
+			Neff = 1/crossprod
+			if Neff < Nmin:
+				#resample (or the other startegy above)
+				x = np.random.choice(x,N,replace=True,p=w)
+				y = np.random.choice(y,N,replace=True,p=w)
+		else:
+			x,y=initialize(df) #no good particles, reinitialize based on current duty cycle
 	return zip(x,y)
 
 
