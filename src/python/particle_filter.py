@@ -4,6 +4,7 @@ import pandas
 import numpy as np
 import math
 import intersection
+from collections import Counter
 
 #kd trees are very useful for range and nearest neighbor searches
 #used to determine the distance between a point and the nearest (x,y) in the centerline database
