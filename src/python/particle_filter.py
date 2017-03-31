@@ -4,6 +4,7 @@ import scipy.spatial
 import numpy as np
 import math
 from intersection import *
+from initialize import *
 
 #kd trees are very useful for range and nearest neighbor searches
 #used to determine the distance between a point and the nearest (x,y) in the centerline database
@@ -109,25 +110,6 @@ def measurement_prob(x, y, routers):
 	return prob
 
 
-def initialize(obs, N=500, r=3):
-	"""
-	Based on the observations of the first duty cycle (dataframe of mac id, x/y coordinates, frequency, level whatever else you need)
-	Get the x/y location of the strongest signal
-	Calculate the distance from this x/y coordinate and multiply by some integer r
-	Generate a particle within the radius as initial hypotheses
-	"""
-	#get the maximum level x/y coordinate in the observation data frame
-	l = obs.loc[obs['level'].idxmax()].level
-	f = obs.loc[obs['level'].idxmax()].freq
-	#calculate distance away from the router and multiply by r
-	dist = calculateDistance(f,l) * r 
-	#generate a random particle uniformly distributed between x-dist, x+dist, same for y
-	xmin, xmax = obs.loc[obs['level'].idxmax()].easting - dist, obs.loc[obs['level'].idxmax()].easting + dist
-	ymin, ymax = obs.loc[obs['level'].idxmax()].northing - dist, obs.loc[obs['level'].idxmax()].northing + dist
-	x = np.random.uniform(xmin, xmax, N)
-	y = np.random.uniform(ymin, ymax, N)
-	return x, y
-
 def particle_filter(centerline_x_y, observations, N=500, Nmin=250):
 	"""
 	Most simple version of particle filter, no limitations based on centerline
@@ -138,7 +120,7 @@ def particle_filter(centerline_x_y, observations, N=500, Nmin=250):
 	       		  [3, 2]])
 	observations: dataframe of router location and strength/freq observed (easting,northing, level, freq, record_time)
 	"""
-	x,y=initialize(observations)
+	x,y= initialize(observations)
 	w = [j / sum([1.]*len(x)) for j in [1.]*len(x)] #weights of the particles, which are equally likely at this point
 	for obs in observations.record_time.unique(): #while there are observations (routers) seen
 		#for each particle
