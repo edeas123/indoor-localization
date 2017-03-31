@@ -49,18 +49,47 @@ algo = location(apdata)
 # determine localization information for each duty cycle
 duty_cycles = pd.groupby(data, ['user_id', 'record_time'])
 
-# using trilateration algorithm at that duty cycle
-result = duty_cycles.apply(algo.locate)
-result = result[['easting', 'northing', 'source']].reset_index().dropna()
+# filter duty cycle observations
+duty_locations = duty_cycles.apply(algo.filter_location)
+current_data = duty_locations[['floor', 'building','easting','northing', 'freq', 'level']].dropna().reset_index()
 
-print result
-#result = result.reset_index(['mac'], drop=True)
+# using trilateration algorithm at each duty cycle
+participants_duty_cycles = pd.groupby(current_data, ['user_id', 'record_time'])
+result_points = participants_duty_cycles.apply(algo.locate_points)
+
+result_points = result_points[['easting', 'northing']].reset_index().dropna()
+print result_points
 
 #TODO: make 2d plot of locations coloured by the duty cycle
 #TODO: project location on the centerline
 # 2d plot of the location for a sample individual
 
 # using particle filtering algorithm
-result_particles = duty_cycles.apply(algo.locate_particles)
+participants = pd.groupby(current_data, ['user_id'])
 
-print result_particles
+#result_particles = participants.apply(algo.locate_particles)
+#print result_particles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

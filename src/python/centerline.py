@@ -9,11 +9,11 @@ import arcpy
 import pandas as pd
 import os
 
-"""
-   retrieve the centerline points corresponding to give floor and building
-"""
-def get_points(floor, building):
 
+def get_points(floor, building):
+    """
+       retrieve the centerline points corresponding to give floor and building
+    """
     # set paths
     base_path = os.path.dirname(os.path.dirname(os.getcwd())) # get root directory
     data_path = base_path + os.sep + "data" # set data directory
