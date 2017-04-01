@@ -120,7 +120,8 @@ def particle_filter(centerline_x_y, observations, N=500, Nmin=250):
 	       		  [3, 2]])
 	observations: dataframe of router location and strength/freq observed (easting,northing, level, freq, record_time)
 	"""
-	x,y= initialize(observations, N)
+	#initialize particles using the first duty cycle
+	x,y= initialize(observations[observations.record_time == df.record_time.unique()[0]], N)
 	w = [j / sum([1.]*len(x)) for j in [1.]*len(x)] #weights of the particles, which are equally likely at this point
 	for obs in observations.record_time.unique(): #while there are observations (routers) seen
 		#df where time stamp is the same as obs
