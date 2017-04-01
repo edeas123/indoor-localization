@@ -59,8 +59,12 @@ class location:
         from the routers seen
         """        
         # call particle filtering algorithm
-        points = pf.particle_filter(observations)
-#        print points
+        # returns a list of xytuples
+        points_list = pf.particle_filter(None, observations)
+        
+        # reformat to pandas series
+        points = pd.DataFrame(points_list, columns = ["easting","northing"])
+        
         return points
 
 

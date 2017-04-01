@@ -67,8 +67,8 @@ print result_points
 # using particle filtering algorithm
 participants = pd.groupby(current_data, ['user_id'])
 
-#result_particles = participants.apply(algo.locate_particles)
-#print result_particles
+result_particles = participants.apply(algo.locate_particles)
+print result_particles
 
 
 
