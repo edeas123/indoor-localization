@@ -105,8 +105,10 @@ def measurement_prob(x, y, routers):
 		#calculate distance participant is predicted to be from the router (x,y)
 		#calculate the difference between these two distances
 		dx,dy = x-routers.iloc[i]['easting'],y-routers.iloc[i]['northing']
-		measure = math.sqrt(dx*dx+dy*dy) 
-		prob *= gaussian(dist, 3, measure)
+		measure = math.sqrt(dx*dx+dy*dy)
+		#how close if the particle to the signal strength distance?
+		diff = abs(dist-measure) 
+		prob *= 1/diff
 	return prob
 
 
