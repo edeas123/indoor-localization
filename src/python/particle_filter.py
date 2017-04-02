@@ -5,6 +5,7 @@ import numpy as np
 import math
 from intersection import *
 from initialize import *
+import centerline as c
 
 #kd trees are very useful for range and nearest neighbor searches
 #used to determine the distance between a point and the nearest (x,y) in the centerline database
@@ -110,7 +111,7 @@ def measurement_prob(x, y, routers):
 	return prob
 
 
-def particle_filter(centerline_x_y, observations, N=500, Nmin=250):
+def particle_filter(observations, N=500, Nmin=250, bootstrap=False):
 	"""
 	Most simple version of particle filter, no limitations based on centerline
 	centerline_x_y: 2d numpy array of x and y coordinates for nodes of the centerline 
@@ -120,16 +121,40 @@ def particle_filter(centerline_x_y, observations, N=500, Nmin=250):
 	       		  [3, 2]])
 	observations: dataframe of router location and strength/freq observed (easting,northing, level, freq, record_time)
 	"""
-	#initialize particles using the first duty cycle
-	x,y= initialize(observations[observations.record_time == df.record_time.unique()[0]], N)
+	f = open('particle_lifespan', 'w')
+	#initialize the particles
+	x,y= initialize(observations[observations.record_time == observations.record_time.unique()[0]], N)
+	z = [0.]*N #building and floor info for each particle 
 	w = [j / sum([1.]*len(x)) for j in [1.]*len(x)] #weights of the particles, which are equally likely at this point
 	for obs in observations.record_time.unique(): #while there are observations (routers) seen
 		#df where time stamp is the same as obs
 		df = observations.loc[observations['record_time'] == obs]
+		#since we are not sure what floor the participant is on, weight each record in the duty cycle by signal strength
+		se = pd.Series(1/abs(df.level))
+		#add this as a column to df
+		df.is_copy = False
+		df['weight'] = se.values
+		#based on the combined weight of each floor and building
+		fl =  df.groupby('floor').sum().reset_index()
+		bldg = df.groupby('building').sum().reset_index()
+		#create a dictionary of each floor and the weight
+		b_dict = bldg[['building','weight']].set_index('building').to_dict()
+		f_dict = fl[['floor','weight']].set_index('floor').to_dict()
+		#multiply building probability by floor probability
+		mul = pd.Series.multiply(df['floor'].map(f_dict['weight']),df['building'].map(b_dict['weight']))
+		#get the index of the maximum probability
+		index = mul.idxmax()
+		#use index to select the row of the data frame and  floor and building
+		floor = df.loc[mul.idxmax()]['floor']
+		building = df.loc[mul.idxmax()]['building']
+
+		#set a floor and building for the duty cycle
+		z = [(floor, building)] * N
 		#for each particle
 		for i in range(N):
 			#run particle through the model
 			x[i], y[i] = random_walk(x[i],y[i],w[i])
+			w[i] = measurement_prob(x[i], y[i], df) #1/difference between router signal strength distance and particle distance from router
 			#reweight the particles based on the new position
 			#if the distance to closest point on centerline is greater than 3m, than the point is not useful
 			#ignore this, every particle gets a weight now, I will add the snapping to this method 
@@ -137,21 +162,31 @@ def particle_filter(centerline_x_y, observations, N=500, Nmin=250):
 				#w[i] = 0
 			#else:
 			#weight based on the distance
-			#what is the probability of observing a signal d1 m away from the distance particle is from the router  
-			w[i] = measurement_prob(x[i], y[i], df)
-			# Normalise weights
-		s = sum(w)
-		crossprod= sum([a**2 for a in w])
-		if crossprod != 0 and s !=0: #make sure no division by 0 if weights are too small
-			w = [b / s for b in w]
-			Neff = 1/crossprod
-			if Neff < Nmin:
-				#resample (or the other startegy above)
-				x = np.random.choice(x,N,replace=True,p=w)
-				y = np.random.choice(y,N,replace=True,p=w)
-		else:
-			x,y=initialize(df, N) #no good particles, reinitialize based on current duty cycle
-	return zip(x,y)
+			#what is the probability of observing a signal d1 m away from the distance particle is from the router
+		# Normalise weights if not equal to zero
+		w = [b / sum(w) for b in w]
+		if bootstrap == True:
+			#perform bootstrap resampling if bootstrap is true, resampling is done every time and snapped to centerline
+			x = np.random.choice(x,N,replace=True,p=w)
+			y = np.random.choice(y,N,replace=True,p=w)
+			#generate the centerline tree for the floor, building
+			tree = c.get_points(floor,building)
+			x,y = bootstrap_resample(tree, zip(x,y),N)
+		
+		else: #if not,perform same as below and resample only if the number of particles with effective weights is small
+			crossprod= sum([a**2 for a in w])
+			if crossprod != 0: #make sure no division by 0 if weights are too small
+				Neff = 1/crossprod
+				if Neff < Nmin:
+					#resample (or the other startegy above)
+					x = np.random.choice(x,N,replace=True,p=w)
+					y = np.random.choice(y,N,replace=True,p=w)
+			else:
+				x,y=initialize(df, N) #no good particles, reinitialize based on current duty cycle
+		#save particles for the duty cycle in file
+		f.write(','.join([str(n) for n in zip(x,y,z)]) + '\n' + '\n')
+	f.close()
+	return zip(x,y,z)
 
 
 
