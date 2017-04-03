@@ -17,6 +17,25 @@ def search_kdtree(t,point):
     dist, indexes = t.query(point)
     return dist
 
+#calculate the mean x,y coord in a group of particles
+def get_centroid(x,y):
+	"""
+	Get the mean point out of all the particles
+	x: list of x coordinates
+	y: list of y coordinates
+	"""
+	return sum(x)/len(x), sum(y)/len(y)
+
+#calculate diatance between a particle and the mean
+def dist(m_x, m_y, x,y): 
+	"""
+	Get the distance between a particle and the mean point
+	m_x,m_y = mean x,y coordinates
+	x: list of x coordinates
+	y: list of y coordinates
+	"""
+	return math.sqrt(sum([(m_x-y)**2, (m_y-y)**2]))
+
 def resample(weights):
 	#generate particles while there are less than N particles (the number of useful particles we want)
 	#if the particle is too far away from centerline, the weight will be zero and resampling will not include these particles
