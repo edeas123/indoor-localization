@@ -6,6 +6,7 @@ import math
 from intersection import *
 from initialize import *
 import centerline as c
+import pandas as pd
 
 #kd trees are very useful for range and nearest neighbor searches
 #used to determine the distance between a point and the nearest (x,y) in the centerline database
