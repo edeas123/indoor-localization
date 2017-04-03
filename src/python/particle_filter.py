@@ -172,7 +172,7 @@ def particle_filter(observations, N=500, Nmin=250, bootstrap=False):
 			x = np.random.choice(x,N,replace=True,p=w)
 			y = np.random.choice(y,N,replace=True,p=w)
 			#generate the centerline tree for the floor, building
-			tree = c.get_points(floor,building)
+			tree = scipy.spatial.cKDTree(c.get_points(floor,building))
 			x,y = bootstrap_resample(tree, zip(x,y),N)
 		
 		else: #if not,perform same as below and resample only if the number of particles with effective weights is small
