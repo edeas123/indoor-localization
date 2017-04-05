@@ -26,3 +26,47 @@ def initialize(obs, N=500, r=3):
 	return zip(x, y)
 
 
+def initialize_dist(obs, N=500, r=3):
+    """
+    initialize points for the particle filter uniformly using the distance obtained
+    from the signal level as the probability of a particle being in that range.
+    The function considers all the routers seen in that duty cycle, not just the
+    router with the strongest signal
+    """
+    # if the number of routers in the duty cycle is 1
+    # return the results from initialize function above
+    router_count = len(np.unique(obs['mac']))
+    
+    if router_count == 1:
+        return initialize(obs)
+    
+    # if the number of routers is greater than 1
+    # get the levels of the different routers, multiply
+    inv_dists = []
+    porp = []
+    for row in obs.iterrows():
+        df = row[1]
+        dist = calculateDistance(df['freq'], df['level'])
+        inv_dists.append(1/float(dist))   
+    
+    inv_dists_sum = sum(inv_dists)
+    for i in inv_dists:
+        porp.append(round((i / inv_dists_sum) * N))
+    
+    j = 0
+    points = []
+    for row in obs.iterrows():
+        df = row[1]
+        points.extend(initialize(pd.DataFrame([df.tolist()], columns=obs.columns), porp[j]))
+        j = j + 1
+
+    return points
+
+    
+    
+    
+    
+    
+
+
+
