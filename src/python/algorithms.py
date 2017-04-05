@@ -21,6 +21,7 @@ class location:
         # return the records with the strongest signal strength for each router
         return df.loc[df['level'].idxmax()]
     
+
     def loc(self, df):
 
         # return the details of the routers from the ap database
@@ -65,7 +66,9 @@ class location:
         #points_list = pf.particle_filter(None, observations)
         
         #change to particle filter call
-        points = pf.particle_filter(observations, init.initialize(observations))
+        #limit to initial observation
+        obs = observations.loc[observations['record_time'] == observations.record_time.unique()[0]]
+        points = pf.particle_filter(observations, init.initialize(obs))
 
         #save the list of data frames to a csv file 
         pd.concat(points).to_csv('particle.csv', sep='\t')
