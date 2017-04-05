@@ -21,6 +21,7 @@ class location:
         return df.loc[df['level'].idxmax()]
     
     def loc(self, df):
+
         # return the details of the routers from the ap database
         rdf = pd.DataFrame()
         for row in df.iterrows():
@@ -60,10 +61,16 @@ class location:
         """        
         # call particle filtering algorithm
         # returns a list of xytuples
-        points_list = pf.particle_filter(None, observations)
+        #points_list = pf.particle_filter(None, observations)
         
+        #change to particle filter call
+        points = pf.particle_filter(observations, init.initialize(observations))
+
         # reformat to pandas series
-        points = pd.DataFrame(points_list, columns = ["easting","northing"])
+        #points = pd.DataFrame(points_list, columns = ["easting","northing"])
+
+        #save the list of data frames to a csv file 
+        pd.concat(points).to_csv('particle.csv', sep='\t')
         
         return points
 
