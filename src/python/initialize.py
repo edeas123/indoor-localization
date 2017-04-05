@@ -23,4 +23,6 @@ def initialize(obs, N=500, r=3):
 	ymin, ymax = obs.loc[obs['level'].idxmax()].northing - dist, obs.loc[obs['level'].idxmax()].northing + dist
 	x = np.random.uniform(xmin, xmax, N)
 	y = np.random.uniform(ymin, ymax, N)
-	return x, y
+	return zip(x, y)
+
+
