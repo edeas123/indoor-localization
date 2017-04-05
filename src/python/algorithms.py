@@ -63,19 +63,18 @@ class location:
         """        
         # call particle filtering algorithm
         # returns a list of xytuples
-        #points_list = pf.particle_filter(None, observations)
         
         #change to particle filter call
         #limit to initial observation
         obs = observations.loc[observations['record_time'] == observations.record_time.unique()[0]]
-        points = pf.particle_filter(observations, init.initialize(obs))
+        points_list = pf.particle_filter(observations, init.initialize(obs))
 
-        #save the list of data frames to a csv file 
-        pd.concat(points).to_csv('particle.csv', sep='\t')
+        # reformat to single dataframe
+        points = pd.concat(points_list, ignore_index=True)
         
-        # reformat to pandas series
-        #points = pd.DataFrame(points_list, columns = ['easting', 'northing', 'floor', 'building', 'duty_cycle'])
-       
+        #save the list of data frames to a csv file 
+        points.to_csv('particle.csv', sep='\t')
+        
         return points
 
 
