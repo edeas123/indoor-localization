@@ -16,7 +16,7 @@ def search_kdtree(t,point):
     	point: the location of particle to find closest distance to node in centerline
     """
     dist, indexes = t.query(point)
-    return dist
+    return dist, indexes
 
 #calculate the mean x,y coord in a group of particles
 def get_centroid(x,y):
@@ -158,8 +158,7 @@ def measurement_prob(x, y, routers):
 		prob *= 1/diff
 	return prob
 
-
-def particle_filter(observations, N=500, Nmin=250, bootstrap=False):
+def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=False):
 	"""
 	Most simple version of particle filter, no limitations based on centerline
 	centerline_x_y: 2d numpy array of x and y coordinates for nodes of the centerline 
@@ -168,12 +167,13 @@ def particle_filter(observations, N=500, Nmin=250, bootstrap=False):
 	       		  [2, 1],
 	       		  [3, 2]])
 	observations: dataframe of router location and strength/freq observed (easting,northing, level, freq, record_time)
+	init_particles: a list of x, y coordinates indicating the initial positions of the particles
 	"""
-	f = open('particle_lifespan', 'w')
 	#initialize the particles
-	x,y= initialize(observations[observations.record_time == observations.record_time.unique()[0]], N)
+	x,y= [list(c) for c in zip(*init_particles)]
 	z = [0.]*N #building and floor info for each particle 
 	w = [j / sum([1.]*len(x)) for j in [1.]*len(x)] #weights of the particles, which are equally likely at this point
+	particle_lifecycle = []
 	for obs in observations.record_time.unique(): #while there are observations (routers) seen
 		#df where time stamp is the same as obs
 		df = observations.loc[observations['record_time'] == obs]
@@ -196,8 +196,8 @@ def particle_filter(observations, N=500, Nmin=250, bootstrap=False):
 		floor = df.loc[mul.idxmax()]['floor']
 		building = df.loc[mul.idxmax()]['building']
 
-		#set a floor and building for the duty cycle
-		z = [(floor, building)] * N
+		#set a floor and building for the duty cycle time obs
+		z = np.asarray([(floor, building, str(df.record_time))] * N)
 		#for each particle
 		for i in range(N):
 			#run particle through the model
@@ -231,12 +231,11 @@ def particle_filter(observations, N=500, Nmin=250, bootstrap=False):
 					y = np.random.choice(y,N,replace=True,p=w)
 			else:
 				x,y=initialize(df, N) #no good particles, reinitialize based on current duty cycle
-		#save particles for the duty cycle in file
-		f.write(','.join([str(n) for n in zip(x,y,z)]) + '\n' + '\n')
-	f.close()
-	return zip(x,y,z)
+		#save particles for the duty cycle in list
+		points = np.asarray(zip(x,y))
+		particle_lifecycle.append(pd.DataFrame(np.concatenate((points,z), axis=1), columns=['easting', 'northing', 'floor', 'building', 'duty_cycle']))
+	return particle_lifecycle
 
 
 
-
-
+		
