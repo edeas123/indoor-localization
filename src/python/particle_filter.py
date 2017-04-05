@@ -5,7 +5,7 @@ import numpy as np
 import math
 from intersection import *
 from initialize import *
-import centerline as c
+import centerline as ct
 import pandas as pd
 
 #kd trees are very useful for range and nearest neighbor searches
@@ -48,7 +48,7 @@ def  get_var(m_x, m_y, x, y):
 	total=0
 	for i in range(0,len(x)):
 		total += dist(m_x, m_y, x[i], y[i])**2
-	return total//(len(x)-1)
+	return total/(len(x)-1)
 
 #calculate precision
 def get_precision(x,y):
@@ -62,6 +62,7 @@ def get_precision(x,y):
 	sd = math.sqrt(var)
 	prec = sd/math.sqrt(len(x))
 	return prec
+
 
 def resample(weights):
 	#generate particles while there are less than N particles (the number of useful particles we want)
@@ -121,8 +122,8 @@ def random_walk(x,y,volatility):
 	#walk a random distance based on the previous observation
 	r = math.radians(h)
 	#relax particles according to how far off the particle is from the observed distance
-	dx = math.sin(r) * np.random.normal(0, 1)*abs(volatility)
-	dy = math.cos(r) * np.random.normal(0, 1)*abs(volatility)
+	dx = math.sin(r) * np.random.normal(3, 1)*abs(1-volatility)
+	dy = math.cos(r) * np.random.normal(3, 1)*abs(1-volatility)
 	x += dx
 	y += dy
 	return x, y
@@ -157,6 +158,7 @@ def measurement_prob(x, y, routers):
 		diff = abs(dist-measure) 
 		prob *= 1/diff
 	return prob
+
 
 def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=False):
 	"""
@@ -218,7 +220,7 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 			x = np.random.choice(x,N,replace=True,p=w)
 			y = np.random.choice(y,N,replace=True,p=w)
 			#generate the centerline tree for the floor, building
-			tree = scipy.spatial.cKDTree(c.get_points(floor,building))
+			tree = scipy.spatial.cKDTree(ct.get_points(floor,building))
 			x,y = bootstrap_resample(tree, zip(x,y),N)
 		
 		else: #if not,perform same as below and resample only if the number of particles with effective weights is small
@@ -229,13 +231,9 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 					#resample (or the other startegy above)
 					x = np.random.choice(x,N,replace=True,p=w)
 					y = np.random.choice(y,N,replace=True,p=w)
-			else:
-				x,y=initialize(df, N) #no good particles, reinitialize based on current duty cycle
+			#else:
+				#x,y=initialize(df, N) #no good particles, reinitialize based on current duty cycle
 		#save particles for the duty cycle in list
 		points = np.asarray(zip(x,y))
 		particle_lifecycle.append(pd.DataFrame(np.concatenate((points,z), axis=1), columns=['easting', 'northing', 'floor', 'building', 'duty_cycle']))
 	return particle_lifecycle
-
-
-
-		
