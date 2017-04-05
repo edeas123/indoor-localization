@@ -9,6 +9,7 @@ import pandas as pd
 import intersection as it
 import particle_filter as pf
 import centerline as ct
+import initialize as init
 
 class location:
     
@@ -66,12 +67,12 @@ class location:
         #change to particle filter call
         points = pf.particle_filter(observations, init.initialize(observations))
 
-        # reformat to pandas series
-        #points = pd.DataFrame(points_list, columns = ["easting","northing"])
-
         #save the list of data frames to a csv file 
         pd.concat(points).to_csv('particle.csv', sep='\t')
         
+        # reformat to pandas series
+        #points = pd.DataFrame(points_list, columns = ['easting', 'northing', 'floor', 'building', 'duty_cycle'])
+       
         return points
 
 
