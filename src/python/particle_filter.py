@@ -199,7 +199,7 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 		building = df.loc[mul.idxmax()]['building']
 
 		#set a floor and building for the duty cycle time obs
-		z = np.asarray([(floor, building, str(df.record_time))] * N)
+		z = np.asarray([(floor, building, pd.to_datetime(obs))] * N)
 		#for each particle
 		for i in range(N):
 			#run particle through the model
