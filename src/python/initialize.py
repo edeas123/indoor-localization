@@ -62,11 +62,54 @@ def initialize_dist(obs, N=500, r=3):
 
     return points
 
-    
-    
-    
-    
-    
 
-
+def initialize_intersect(obs, N=500, r=3, step_size=1):
+    
+    # if the number of routers in the duty cycle is 1
+    # return the results from initialize function above
+    router_count = len(np.unique(obs['mac']))
+    
+    if router_count == 1:
+        return initialize(obs)
+    
+    # if the number of routers is greater than 1
+    d = []; x = []; y = []
+    step = step_size
+    geom = Geometry()
+    
+    for row in obs.iterrows():
+        df = row[1]
+        d.append(calculateDistance(df['freq'], df['level']))
+        x.append(df['easting'])
+        y.append(df['northing'])
+    
+    # save the original d, x and y
+    origx = x; origy = y; origd = d
+    
+    result = []
+    while len(result) < N:
+        num_routers = len(d)
+        
+        # compute the circle intersections
+        for i in range(0, num_routers-1):
+            for j in range(i+1,num_routers):
+                points = geom.circle_intersection((x[i],y[i], d[i]), (x[j],y[j], d[j]))
+                if len(points) == 0: #if no intersections are found
+                    result.extend(line_intersect(x[i],y[i],d[i], x[j],y[j],d[j]))
+                else:
+                    result.extend(points)
+    
+        # increase and reduce the circle radius by the step size
+        dp = np.array(origd) + step
+        dm = np.array(origd)- step
+        d = dp.tolist() + dm.tolist()
+        
+        # increase the number of center points
+        x = origx * 2
+        y = origy * 2        
+        
+        # increase the step size
+        step = step + step_size
+    
+    return result
 
