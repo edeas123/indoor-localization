@@ -139,22 +139,25 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 		#add this as a column to df
 		df.is_copy = False
 		df['weight'] = se.values
+		df['count'] = 1
 		#based on the combined weight of each floor and building
-		fl =  df.groupby('floor').sum().reset_index()
-		bldg = df.groupby('building').sum().reset_index()
+		#fl =  df.groupby('floor').sum().reset_index()
+		#bldg = df.groupby('building').sum().reset_index()
 		#create a dictionary of each floor and the weight
-		b_dict = bldg[['building','weight']].set_index('building').to_dict()
-		f_dict = fl[['floor','weight']].set_index('floor').to_dict()
+		#b_dict = bldg[['building','weight']].set_index('building').to_dict()
+		#f_dict = fl[['floor','weight']].set_index('floor').to_dict()
 		#multiply building probability by floor probability
-		mul = pd.Series.multiply(df['floor'].map(f_dict['weight']),df['building'].map(b_dict['weight']))
+		mul = df.groupby(['floor','building']).sum()
+		mul = mul['weight']/mul['count']
+		#pd.Series.multiply(df['floor'].map(f_dict['weight']),df['building'].map(b_dict['weight']))
 		#get the index of the maximum probability
-		index = mul.idxmax()
+		floor, building = mul.idxmax()
 		#use index to select the row of the data frame and  floor and building
-		floor = df.loc[mul.idxmax()]['floor']
-		building = df.loc[mul.idxmax()]['building']
+		#floor = df.loc[mul.idxmax()]['floor']
+		#building = df.loc[mul.idxmax()]['building']
 
 		#set a floor and building for the duty cycle time obs
-		z = np.asarray([(floor, building, pd.to_datetime(obs))] * N)
+		z = np.asarray([(floor, building, str(df.record_time))] * N)
 		#for each particle
 		for i in range(N):
 			#run particle through the model
@@ -174,10 +177,26 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 			#perform bootstrap resampling if bootstrap is true, resampling is done every time and snapped to centerline
 			x = np.random.choice(x,N,replace=True,p=w)
 			y = np.random.choice(y,N,replace=True,p=w)
+			#generate the centerline tree for the floor, building
+			#if building name in router database doesn't match, translate it to centerline building name to collect nodes
+			#for constructing the tree
 			if building == "MurrayLibrary":
 				building = "Murray"
-			#generate the centerline tree for the floor, building
-			tree = scipy.spatial.cKDTree(ct.get_points(floor,building))
+			elif building == "MarquisHall":
+				building = "Marquis Hall"
+			elif building == "KirkHall":
+				building = "Kirk Hall"
+			elif building == "MarquisHall":
+				building = "Marquis Hall"
+			elif building == "PlaceRiel":
+				building = "Place Riel"
+			elif building == "MUB":
+				building = "Memorial"
+			print building
+			print floor
+			cent = ct.get_points(int(floor), str(building))
+			nodes = [tuple(i[0][2:4]) for i in cent]
+			tree = scipy.spatial.cKDTree(nodes)
 			x,y = bootstrap_resample(tree, zip(x,y),N)
 		
 		else: #if not,perform same as below and resample only if the number of particles with effective weights is small
@@ -194,3 +213,5 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 		points = np.asarray(zip(x,y))
 		particle_lifecycle.append(pd.DataFrame(np.concatenate((points,z), axis=1), columns=['easting', 'northing', 'floor', 'building', 'duty_cycle']))
 	return particle_lifecycle
+
+
