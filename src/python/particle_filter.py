@@ -7,6 +7,7 @@ from intersection import *
 from initialize import *
 import centerline as ct
 import pandas as pd
+from collections import Counter
 
 #kd trees are very useful for range and nearest neighbor searches
 #used to determine the distance between a point and the nearest (x,y) in the centerline database
@@ -17,52 +18,6 @@ def search_kdtree(t,point):
     """
     dist, indexes = t.query(point)
     return dist, indexes
-
-#calculate the mean x,y coord in a group of particles
-def get_centroid(x,y):
-	"""
-	Get the mean point out of all the particles
-	x: list of x coordinates
-	y: list of y coordinates
-	"""
-	return sum(x)/len(x), sum(y)/len(y)
-
-#calculate diatance between a particle and the mean
-def dist(m_x, m_y, x,y): 
-	"""
-	Get the distance between a particle and the mean point
-	m_x,m_y = mean x,y coordinates
-	x: list of x coordinates
-	y: list of y coordinates
-	"""
-	return math.sqrt(sum([(m_x-y)**2, (m_y-y)**2]))
-
-#calculate the variance of particles
-def  get_var(m_x, m_y, x, y):
-	"""
-	Get the variance for the particles
-	m: mean x,y coordinate
-	x: list of x coordinates
-	y: list of y coordinates
-	"""
-	total=0
-	for i in range(0,len(x)):
-		total += dist(m_x, m_y, x[i], y[i])**2
-	return total/(len(x)-1)
-
-#calculate precision
-def get_precision(x,y):
-	"""
-	Get the precision for a group of particles
-	x: list of x coordinates
-	y: list of y coordinates
-	"""
-	mean_x, mean_y = get_centroid(x,y)
-	var = get_var(mean_x, mean_y, x, y)
-	sd = math.sqrt(var)
-	prec = sd/math.sqrt(len(x))
-	return prec
-
 
 def resample(weights):
 	#generate particles while there are less than N particles (the number of useful particles we want)
@@ -219,6 +174,8 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 			#perform bootstrap resampling if bootstrap is true, resampling is done every time and snapped to centerline
 			x = np.random.choice(x,N,replace=True,p=w)
 			y = np.random.choice(y,N,replace=True,p=w)
+			if building == "MurrayLibrary":
+				building = "Murray"
 			#generate the centerline tree for the floor, building
 			tree = scipy.spatial.cKDTree(ct.get_points(floor,building))
 			x,y = bootstrap_resample(tree, zip(x,y),N)
