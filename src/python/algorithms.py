@@ -10,6 +10,7 @@ import intersection as it
 import particle_filter as pf
 import centerline as ct
 import initialize as init
+import scipy.spatial
 
 class location:
     
@@ -84,6 +85,19 @@ class location:
         it would contain multiple ssid from the same router
         get the details of the router using the router database
         """
+       #get the floor and building 
+        se = pd.Series(1/abs(observations.level))
+        #add this as a column to df
+        observations.is_copy = False
+        observations['weight'] = se.values
+        observations['count'] = 1
+        mul = observations.groupby(['floor','building']).sum()
+        mul = mul['weight']/mul['count']
+        #get the index of the maximum probability
+        floor, building = mul.idxmax()
+        #check that the building is spelled correctly
+        place = {"MurrayLibrary": "Murray", "MarquisHall": "Marquis Hall", "KirkHall": "Kirk Hall", "PlaceRiel": "Place Riel", "MUB": "Memorial", "Spinks": "Thorvaldson", "Thorvaldson": "Thorvaldson", "QuAppelleHallAddition": "Quappelle Hall", "SaskatchewanHall": "Saskatchewan Hall", "Administration": "Administration", "Agriculture": "Argiculture", "Archaeology": "Archaeology", "Arts": "Arts", "Athabasca": "Athabasca Hall", "Biology": "Biology", "College": "College", "Commerce": "Commerce", "Engineering": "Engineering", "Geology": "Geology", "Law": "Law", "Physics": "Physics"}
+        
         # perform the circle intersection
         router_count = len(observations)
         points = it.circle_intersection(router_count, observations['easting'].values, observations['northing'].values, 
@@ -93,5 +107,31 @@ class location:
         for point in points:
             pt = pd.DataFrame(data=[[point[0], point[1]]], columns=['easting', 'northing'])
             coord = coord.append(pt)
-        
+
+        #build tree if the building has centerline points
+        if building in place:
+            tr = ct.get_points(floor,place[building])
+            nodes = [tuple(i[0][2:4]) for i in tr]
+            tr = scipy.spatial.cKDTree(nodes)
+            cent_x = []
+            cent_y = []
+            
+            #for each intersection point
+            coord = coord.reset_index()
+            for c in range(coord.shape[0]):
+                #get nearest point in centerline
+                dist, index = pf.search_kdtree(tr, (coord.loc[c]['easting'], coord.loc[c]['northing']))
+                #Store as cent_x and cent_y in the coord dataframe
+                cent_x.append(tr.data[index, 0])
+                cent_y.append(tr.data[index, 1])
+        else: #the building isn't in the centerline database, so the intersection points are the best we can do, no snapping is done
+            cent_x = ["NA"] * coord.shape[0]
+            cent_y = ["NA"] * coord.shape[0]
+        coord['floor'] = floor
+        coord['building'] = building
+        se = pd.Series(cent_x)
+        coord['cent_x'] = se.values
+        se = pd.Series(cent_y)
+        coord['cent_y'] = se.values
         return coord
+    
