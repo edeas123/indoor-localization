@@ -57,7 +57,8 @@ current_data = duty_locations[['floor', 'building','easting','northing', 'freq',
 participants_duty_cycles = pd.groupby(current_data, ['user_id', 'record_time'])
 result_points = participants_duty_cycles.apply(algo.locate_points)
 
-result_points = result_points[['easting', 'northing']].reset_index().dropna()
+#addition of snapped points to data frame
+result_points = result_points[['easting', 'northing','floor','building','cent_x', 'cent_y']].reset_index().dropna()
 print result_points
 
 #TODO: make 2d plot of locations coloured by the duty cycle
