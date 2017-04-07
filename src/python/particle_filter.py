@@ -180,24 +180,13 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 			#generate the centerline tree for the floor, building
 			#if building name in router database doesn't match, translate it to centerline building name to collect nodes
 			#for constructing the tree
-			if building == "MurrayLibrary":
-				building = "Murray"
-			elif building == "MarquisHall":
-				building = "Marquis Hall"
-			elif building == "KirkHall":
-				building = "Kirk Hall"
-			elif building == "MarquisHall":
-				building = "Marquis Hall"
-			elif building == "PlaceRiel":
-				building = "Place Riel"
-			elif building == "MUB":
-				building = "Memorial"
-			print building
-			print floor
-			cent = ct.get_points(int(floor), str(building))
-			nodes = [tuple(i[0][2:4]) for i in cent]
-			tree = scipy.spatial.cKDTree(nodes)
-			x,y = bootstrap_resample(tree, zip(x,y),N)
+			place = {"MurrayLibrary": "Murray", "MarquisHall": "Marquis Hall", "KirkHall": "Kirk Hall", "PlaceRiel": "Place Riel", "MUB": "Memorial", "Spinks": "Thorvaldson", "Thorvaldson": "Thorvaldson", "QuAppelleHallAddition": "Quappelle Hall", "SaskatchewanHall": "Saskatchewan Hall", "Administration": "Administration", "Agriculture": "Argiculture", "Archaeology": "Archaeology", "Arts": "Arts", "Athabasca": "Athabasca Hall", "Biology": "Biology", "College": "College", "Commerce": "Commerce", "Engineering": "Engineering", "Geology": "Geology", "Law": "Law", "Physics": "Physics"}
+			#if the building is in centerline, resample using centerline
+			if building in place:
+				cent = ct.get_points(int(floor), place[building])
+				nodes = [tuple(i[0][2:4]) for i in cent]
+				tree = 1(nodes)
+				x,y = bootstrap_resample(tree, zip(x,y),N)
 		
 		else: #if not,perform same as below and resample only if the number of particles with effective weights is small
 			crossprod= sum([a**2 for a in w])
