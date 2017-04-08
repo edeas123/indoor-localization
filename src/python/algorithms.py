@@ -110,6 +110,7 @@ class location:
 
         #build tree if the building has centerline points
         if building in place:
+            print building, place[building], floor
             tr = ct.get_points(floor,place[building])
             nodes = [tuple(i[0][2:4]) for i in tr]
             tr = scipy.spatial.cKDTree(nodes)
