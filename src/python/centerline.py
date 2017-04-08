@@ -20,7 +20,7 @@ def get_points(floor, building):
     arc_path = data_path + os.sep + "arcgis" + os.sep + "campus.gdb" # set arc files directory
 
     arcpy.env.workspace = arc_path
-    feature_class = arc_path + os.sep + "CenterLine2_1mPoints_b"
+    feature_class = arc_path + os.sep + "CenterLine_Points_1m"
     
     clause = '"bname"' +  " = '" + str(building) + "' and " + '"fnum"' +  " = " + str(floor)
     
