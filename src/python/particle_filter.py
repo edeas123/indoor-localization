@@ -153,8 +153,7 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 		#get the index of the maximum probability
 		floor, building = mul.idxmax()
 		#use index to select the row of the data frame and  floor and building
-		#floor = df.loc[mul.idxmax()]['floor']
-		#building = df.loc[mul.idxmax()]['building']
+		#floor = df.loc[mul.idxmax()]['floor']		#building = df.loc[mul.idxmax()]['building']
 
 		#set a floor and building for the duty cycle time obs
 		z = np.asarray([(floor, building, pd.to_datetime(obs))] * N)
@@ -185,7 +184,7 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 			if building in place:
 				cent = ct.get_points(int(floor), place[building])
 				nodes = [tuple(i[0][2:4]) for i in cent]
-				tree = 1(nodes)
+				tree = scipy.spatial.cKDTree(nodes)
 				x,y = bootstrap_resample(tree, zip(x,y),N)
 		
 		else: #if not,perform same as below and resample only if the number of particles with effective weights is small
