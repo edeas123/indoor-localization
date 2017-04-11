@@ -7,7 +7,6 @@ Created on Thu Mar 09 07:34:23 2017
 
 # import required packages
 import pandas as pd
-import utils
 import os
 import mysql.connector
 from config import Config
@@ -45,17 +44,18 @@ algo = location(apdata)
 
 # query to retrieve users
 users_query = """select distinct(user_id)
-from SHED10.campus_wifi"""
+from SHED10.campus"""
 
 users = pd.read_sql(users_query, con=cnx, columns=['user_id']).values
 
 # loop through the users
 for user in users:
     user_id = user[0]
+    print user_id
     
     # query to retrieve study wifi data
     data_query = """select *
-    from SHED10.campus_wifi as t1
+    from SHED10.campus as t1
     where t1.user_id=""" + str(user_id) + ";"
     
     data = pd.read_sql(data_query, con=cnx, columns=['user_id', 'record_time', 'ssid', 'bssid',
@@ -96,9 +96,9 @@ for user in users:
     result_particles = participants.apply(algo.locate_particles)
     
     # write particles locations to file
-    initial = 0
+    initial = 1
     
-    particles_file = "particles_" + str(user_id) + "_" + str(initial) + "_False" + ".csv"
+    particles_file = "particles_" + str(user_id) + "_" + str(initial) + "_True" + ".csv"
     result_particles.to_csv(result_path + os.sep + particles_file, index=False)
     print user_id, len(result_particles)
 
