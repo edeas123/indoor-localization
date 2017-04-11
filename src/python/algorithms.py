@@ -68,13 +68,15 @@ class location:
         #change to particle filter call
         #limit to initial observation
         obs = observations.loc[observations['record_time'] == observations.record_time.unique()[0]]
-        points_list = pf.particle_filter(observations, init.initialize(obs))
+        
+        N = 300, Nmin = 150, centerline= True
+        points_list = pf.particle_filter(observations, init.initialize(obs, N), N, Nmin, centerline)
 
         # reformat to single dataframe
         points = pd.concat(points_list, ignore_index=True)
         
         #save the list of data frames to a csv file 
-        points.to_csv('particle.csv', sep='\t')
+        #points.to_csv('particle.csv', sep='\t')
         
         return points
 
@@ -96,7 +98,7 @@ class location:
         #get the index of the maximum probability
         floor, building = mul.idxmax()
         #check that the building is spelled correctly
-        place = {"MurrayLibrary": "Murray", "MarquisHall": "Marquis Hall", "KirkHall": "Kirk Hall", "PlaceRiel": "Place Riel", "MUB": "Memorial", "Spinks": "Thorvaldson", "Thorvaldson": "Thorvaldson", "QuAppelleHallAddition": "Quappelle Hall", "SaskatchewanHall": "Saskatchewan Hall", "Administration": "Administration", "Agriculture": "Argiculture", "Archaeology": "Archaeology", "Arts": "Arts", "Athabasca": "Athabasca Hall", "Biology": "Biology", "College": "College", "Commerce": "Commerce", "Engineering": "Engineering", "Geology": "Geology", "Law": "Law", "Physics": "Physics"}
+        place = {"MurrayLibrary": "Murray", "MarquisHall": "Marquis Hall", "KirkHall": "Kirk Hall", "PlaceRiel": "Place Riel", "MUB": "Memorial", "Spinks": "Thorvaldson", "Thorvaldson": "Thorvaldson", "QuAppelleHallAddition": "Quappelle Hall", "SaskatchewanHall": "Saskatchewan Hall", "Administration": "Administration", "Agriculture": "Agriculture", "Archaeology": "Archaeology", "Arts": "Arts", "Athabasca": "Athabasca Hall", "Biology": "Biology", "College": "College", "Commerce": "Commerce", "Engineering": "Engineering", "Geology": "Geology", "Law": "Law", "Physics": "Physics"}
         
         # perform the circle intersection
         router_count = len(observations)
