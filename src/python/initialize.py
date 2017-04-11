@@ -57,7 +57,7 @@ def initialize_dist(obs, N=500, r=3):
     points = []
     for row in obs.iterrows():
         df = row[1]
-        points.extend(initialize(pd.DataFrame([df.tolist()], columns=obs.columns), porp[j], r))
+        points.extend(initialize(DataFrame([df.tolist()], columns=obs.columns), porp[j], r))
         j = j + 1
 
     return points[0:N]
