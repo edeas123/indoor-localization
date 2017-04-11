@@ -153,8 +153,7 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 		#get the index of the maximum probability
 		floor, building = mul.idxmax()
 		#use index to select the row of the data frame and  floor and building
-		#floor = df.loc[mul.idxmax()]['floor']
-		#building = df.loc[mul.idxmax()]['building']
+		#floor = df.loc[mul.idxmax()]['floor']		#building = df.loc[mul.idxmax()]['building']
 
 		#set a floor and building for the duty cycle time obs
 		z = np.asarray([(floor, building, pd.to_datetime(obs))] * N)
@@ -180,12 +179,12 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 			#generate the centerline tree for the floor, building
 			#if building name in router database doesn't match, translate it to centerline building name to collect nodes
 			#for constructing the tree
-			place = {"MurrayLibrary": "Murray", "MarquisHall": "Marquis Hall", "KirkHall": "Kirk Hall", "PlaceRiel": "Place Riel", "MUB": "Memorial", "Spinks": "Thorvaldson", "Thorvaldson": "Thorvaldson", "QuAppelleHallAddition": "Quappelle Hall", "SaskatchewanHall": "Saskatchewan Hall", "Administration": "Administration", "Agriculture": "Argiculture", "Archaeology": "Archaeology", "Arts": "Arts", "Athabasca": "Athabasca Hall", "Biology": "Biology", "College": "College", "Commerce": "Commerce", "Engineering": "Engineering", "Geology": "Geology", "Law": "Law", "Physics": "Physics"}
+			place = {"MurrayLibrary": "Murray", "MarquisHall": "Marquis Hall", "KirkHall": "Kirk Hall", "PlaceRiel": "Place Riel", "MUB": "Memorial", "Spinks": "Thorvaldson", "Thorvaldson": "Thorvaldson", "QuAppelleHallAddition": "Quappelle Hall", "SaskatchewanHall": "Saskatchewan Hall", "Administration": "Administration", "Agriculture": "Agriculture", "Archaeology": "Archaeology", "Arts": "Arts", "Athabasca": "Athabasca Hall", "Biology": "Biology", "College": "College", "Commerce": "Commerce", "Engineering": "Engineering", "Geology": "Geology", "Law": "Law", "Physics": "Physics"}
 			#if the building is in centerline, resample using centerline
 			if building in place:
 				cent = ct.get_points(int(floor), place[building])
 				nodes = [tuple(i[0][2:4]) for i in cent]
-				tree = 1(nodes)
+				tree = scipy.spatial.cKDTree(nodes)
 				x,y = bootstrap_resample(tree, zip(x,y),N)
 		
 		else: #if not,perform same as below and resample only if the number of particles with effective weights is small
