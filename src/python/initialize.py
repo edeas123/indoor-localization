@@ -38,7 +38,7 @@ def initialize_dist(obs, N=500, r=3):
     router_count = len(np.unique(obs['mac']))
     
     if router_count == 1:
-        return initialize(obs)
+        return initialize(obs, N, r)
     
     # if the number of routers is greater than 1
     # get the levels of the different routers, multiply
@@ -57,10 +57,10 @@ def initialize_dist(obs, N=500, r=3):
     points = []
     for row in obs.iterrows():
         df = row[1]
-        points.extend(initialize(pd.DataFrame([df.tolist()], columns=obs.columns), porp[j]))
+        points.extend(initialize(pd.DataFrame([df.tolist()], columns=obs.columns), porp[j], r))
         j = j + 1
 
-    return points
+    return points[0:N]
 
 
 def initialize_intersect(obs, N=500, r=3, step_size=1):
@@ -70,7 +70,7 @@ def initialize_intersect(obs, N=500, r=3, step_size=1):
     router_count = len(np.unique(obs['mac']))
     
     if router_count == 1:
-        return initialize(obs)
+        return initialize(obs, N, r)
     
     # if the number of routers is greater than 1
     d = []; x = []; y = []
@@ -111,5 +111,5 @@ def initialize_intersect(obs, N=500, r=3, step_size=1):
         # increase the step size
         step = step + step_size
     
-    return result
+    return result[0:N]
 

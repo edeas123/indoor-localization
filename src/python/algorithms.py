@@ -70,7 +70,7 @@ class location:
         obs = observations.loc[observations['record_time'] == observations.record_time.unique()[0]]
         
         N = 300, Nmin = 150, centerline= True
-        points_list = pf.particle_filter(observations, init.initialize(obs, N), N, Nmin, centerline)
+        points_list = pf.particle_filter(observations, init.initialize_dist(obs, N), N, Nmin, centerline)
 
         # reformat to single dataframe
         points = pd.concat(points_list, ignore_index=True)
