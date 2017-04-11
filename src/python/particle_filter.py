@@ -179,7 +179,7 @@ def particle_filter(observations, init_particles, N=500, Nmin=250, bootstrap=Fal
 			#generate the centerline tree for the floor, building
 			#if building name in router database doesn't match, translate it to centerline building name to collect nodes
 			#for constructing the tree
-			place = {"MurrayLibrary": "Murray", "MarquisHall": "Marquis Hall", "KirkHall": "Kirk Hall", "PlaceRiel": "Place Riel", "MUB": "Memorial", "Spinks": "Thorvaldson", "Thorvaldson": "Thorvaldson", "QuAppelleHallAddition": "Quappelle Hall", "SaskatchewanHall": "Saskatchewan Hall", "Administration": "Administration", "Agriculture": "Argiculture", "Archaeology": "Archaeology", "Arts": "Arts", "Athabasca": "Athabasca Hall", "Biology": "Biology", "College": "College", "Commerce": "Commerce", "Engineering": "Engineering", "Geology": "Geology", "Law": "Law", "Physics": "Physics"}
+			place = {"MurrayLibrary": "Murray", "MarquisHall": "Marquis Hall", "KirkHall": "Kirk Hall", "PlaceRiel": "Place Riel", "MUB": "Memorial", "Spinks": "Thorvaldson", "Thorvaldson": "Thorvaldson", "QuAppelleHallAddition": "Quappelle Hall", "SaskatchewanHall": "Saskatchewan Hall", "Administration": "Administration", "Agriculture": "Agriculture", "Archaeology": "Archaeology", "Arts": "Arts", "Athabasca": "Athabasca Hall", "Biology": "Biology", "College": "College", "Commerce": "Commerce", "Engineering": "Engineering", "Geology": "Geology", "Law": "Law", "Physics": "Physics"}
 			#if the building is in centerline, resample using centerline
 			if building in place:
 				cent = ct.get_points(int(floor), place[building])
